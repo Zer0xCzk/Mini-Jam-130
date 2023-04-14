@@ -12,6 +12,8 @@ SDL_Renderer* gRenderer = NULL;
 static bool isRunning = true;
 static const Uint8* keyStates = NULL;
 static Uint8 lastKeyStates[SDL_NUM_SCANCODES];
+int mousex, mousey;
+Uint32 buttons;
 
 //=============================================================================
 bool InitSDL()
@@ -113,6 +115,7 @@ void StartLoop(void (*update)(float), void (*render)(float))
 		// Copy keyStates state to lastKeyStates.
 		// It get's auto updated while calling SDL_PollEvent.
 		memcpy(lastKeyStates, keyStates, sizeof(Uint8) * SDL_NUM_SCANCODES);
+		buttons = SDL_GetMouseState(&mousex, &mousey);
 
 		// Event handling
 		SDL_Event e;
@@ -178,4 +181,10 @@ bool IsKeyReleased(SDL_Scancode scanCode)
 bool IsKeyPressed(SDL_Scancode scanCode)
 {
 	return !lastKeyStates[scanCode] && keyStates[scanCode];
+}
+
+//=============================================================================
+bool IsMousePressed(int button)
+{
+	return (buttons & button) != 0;
 }

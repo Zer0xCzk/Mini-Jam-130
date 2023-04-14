@@ -60,3 +60,9 @@ Returns true, if key with provided scan code was pressed
 since previous update
 */
 bool IsKeyPressed(SDL_Scancode scanCode);
+
+/*!
+Returns true, if provided button was pressed
+since previous update
+*/
+bool IsMousePressed(int button);
