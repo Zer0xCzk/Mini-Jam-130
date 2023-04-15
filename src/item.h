@@ -8,5 +8,6 @@ struct Item {
 	SDL_Texture* icon;
 	char headerstr[20];
 	char descriptionstr[100];
-	int price;
+	unsigned int price;
+	unsigned int ammount;
 };

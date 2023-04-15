@@ -8,10 +8,18 @@ set(SOURCES
 	src/engine.h
 	src/engine.cpp
 	src/main.cpp
+	src/item.h
+	src/enemy.h
+	src/player.h
+	src/weapon.h
 )
 
 source_group("Headers" FILES
 	src/engine.h
+	src/item.h
+	src/enemy.h
+	src/player.h
+	src/weapon.h
 )
 
 # Set a default build type if none was specified

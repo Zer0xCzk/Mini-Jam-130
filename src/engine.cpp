@@ -127,7 +127,6 @@ void StartLoop(void (*update)(float), void (*render)(float))
 				return;
 			}
 		}
-
 		// Game logic and time handling
 		double newTime = SDL_GetTicks() / 1000.0;
 		double frameTime = newTime - currentTime;
