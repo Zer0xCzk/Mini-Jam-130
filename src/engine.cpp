@@ -13,7 +13,7 @@ static bool isRunning = true;
 static const Uint8* keyStates = NULL;
 static Uint8 lastKeyStates[SDL_NUM_SCANCODES];
 int mousex, mousey;
-Uint32 buttons;
+Uint32 buttons, lastButtons;
 
 //=============================================================================
 bool InitSDL()
@@ -115,7 +115,7 @@ void StartLoop(void (*update)(float), void (*render)(float))
 		// Copy keyStates state to lastKeyStates.
 		// It get's auto updated while calling SDL_PollEvent.
 		memcpy(lastKeyStates, keyStates, sizeof(Uint8) * SDL_NUM_SCANCODES);
-		buttons = SDL_GetMouseState(&mousex, &mousey);
+		
 
 		// Event handling
 		SDL_Event e;
@@ -127,6 +127,8 @@ void StartLoop(void (*update)(float), void (*render)(float))
 				return;
 			}
 		}
+		lastButtons = buttons;
+		buttons = SDL_GetMouseState(&mousex, &mousey);
 		// Game logic and time handling
 		double newTime = SDL_GetTicks() / 1000.0;
 		double frameTime = newTime - currentTime;

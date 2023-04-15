@@ -15,13 +15,19 @@
 #include <time.h>
 #include <sstream>
 
+int WW = 1920;
+int WH = 1080;
+double scale = 1.5;
+#define price1 (Uint32)rand() % 20 + 80
+#define price2 (Uint32)rand() % 20 + 30
+#define cd1 4
+#define cd2 2
+
 // Forward function declarations
 void Update(float dt);
 void RenderFrame(float dt);
 SDL_Texture* LoadSprite(const char* path);
 
-#define WW 1600
-#define WH 1200
 
 TTF_Font* SegoeHeader;
 TTF_Font* Segoep;
@@ -35,23 +41,24 @@ SDL_Texture* Shophag;
 SDL_Texture* Shophagi;
 SDL_Texture* Battex;
 SDL_Texture* Gobtex;
+SDL_Texture* Heart;
 Item item[2];
-Weapon sword = { NULL, 4 };
-Weapon batbgone = { NULL, 4 };
+Weapon sword = { NULL, cd1 };
+Weapon batbgone = { NULL, cd1 };
 Weapon flail = { NULL, 6 };
 SDL_Point mouse;
 SDL_Rect tran{ 0, 0, WW, 0};
-Player player = { NULL, {WW / 2, (WH / 6) * 3, 64, 128}};
+Player player = { NULL, {WW / 2, (WH / 6) * 3, 64, 128}, 20 };
 Enemy enemy[15];
 bool scrolled = false;
 float timeleft = 10;
 int timeleftint = 10;
-int money = 10000;
+int money = 100;
 float  lastspawn = 40;
 int shopitem;
 float sec = 0;
 double inputcool = 0.3;
-std::stringstream moneytxt, pricetxt, item0txt, swdtxt, bbgtxt, timetxt, item1txt, flltxt;
+std::stringstream moneytxt, pricetxt, item0txt, swdtxt, bbgtxt, timetxt, item1txt, flltxt, hammtxt;
 //=============================================================================
 void itemLoad()
 {
@@ -59,13 +66,13 @@ void itemLoad()
 		NULL,
 		"Holy Handgrenade",
 		"Kills everything on screen (Especially rabbits)",
-		 (Uint32)rand() % 20 + 80
+		 price1
 	};
 	item[1] = {
 		NULL,
 		"Bandage",
 		"A regular bandage, heals 5 hp",
-		(Uint32)rand() % 20 + 30
+		price2
 	};
 }
 void textureLoad()
@@ -85,6 +92,8 @@ void textureLoad()
 	sword.icon = LoadSprite("assets/items/swd.png");
 	batbgone.icon = LoadSprite("assets/items/bbg.png");
 	flail.icon = LoadSprite("assets/items/flail.png");
+	Heart = LoadSprite("assets/items/heart.png");
+
 }
 void textureDestroy()
 {
@@ -118,6 +127,8 @@ void textureDestroy()
 		SDL_DestroyTexture(batbgone.icon);
 	if (flail.icon)
 		SDL_DestroyTexture(flail.icon);
+	if (Heart)
+		SDL_DestroyTexture(Heart);
 }
 
 
@@ -152,7 +163,7 @@ int main(int argc, char* argv[])
 }
 
 //=============================================================================
-enum state {Dungeon, Menu, Shop};
+enum state { Dungeon, Menu, Shop, Options, Tutorial, GameOver };
 state curstate = Menu;
 state laststate = Menu;
 state renstate = Menu;
@@ -182,17 +193,17 @@ void enemySpawn()
 				{
 				case(Left):
 				{
-					enemy[i].body.w = 100;
-					enemy[i].body.h = 100;
+					enemy[i].body.w = 100 * scale;
+					enemy[i].body.h = 100 * scale;
 					enemy[i].alive = true;
 					enemy[i].body.x = WW - enemy[i].body.w;
-					enemy[i].body.y = 0 + WH / 4;
+					enemy[i].body.y = 0 + (WH / 4);
 					break;
 				}
 				case(Right):
 				{
-					enemy[i].body.w = 100;
-					enemy[i].body.h = 100;
+					enemy[i].body.w = 100 * scale;
+					enemy[i].body.h = 100 * scale;
 					enemy[i].alive = true;
 					enemy[i].body.x = 0;
 					enemy[i].body.y = 0 + WH / 4;
@@ -207,17 +218,17 @@ void enemySpawn()
 				{
 				case(Left):
 				{
-					enemy[i].body.w = 100;
-					enemy[i].body.h = 100;
+					enemy[i].body.w = 100 * scale;
+					enemy[i].body.h = 100 * scale;
 					enemy[i].alive = true;
-					enemy[i].body.x = WW - enemy[i].body.w;
+					enemy[i].body.x = (WW - enemy[i].body.w);
 					enemy[i].body.y = 0 + WH / 2;
 					break;
 				}
 				case(Right):
 				{
-					enemy[i].body.w = 100;
-					enemy[i].body.h = 100;
+					enemy[i].body.w = 100 * scale;
+					enemy[i].body.h = 100 * scale;
 					enemy[i].alive = true;
 					enemy[i].body.x = 0;
 					enemy[i].body.y = 0 + WH / 2;
@@ -225,7 +236,7 @@ void enemySpawn()
 				}
 				}
 			}
-			enemy[i].speed = 200;
+			enemy[i].speed = 200 * scale;
 			lastspawn = 0;
 			break;
 		}
@@ -236,14 +247,12 @@ void enemySpawn()
 
 void Transition()
 {
-	/*
-	if (curstate == Shop)
+	if (curstate == Tutorial || curstate == Options || curstate == Menu)
 	{
 		laststate = curstate;
 		renstate = curstate;
 		return;
 	}
-	*/
 	if (tran.h >= WH && scrolled == false)
 	{
 		scrolled = true;
@@ -272,11 +281,52 @@ void Transition()
 void menuLoop()
 {
 	SDL_Rect start = { 64, 64, 200, 50 };
+	SDL_Rect options = { start.x, start.y + 64, 200, 50 };
 	if ((SDL_PointInRect(&mouse, &start)) && IsMousePressed(SDL_BUTTON_LMASK))
 	{
 		curstate = Shop;
 	}
+	if ((SDL_PointInRect(&mouse, &options)) && IsMousePressed(SDL_BUTTON_LMASK))
+	{
+		curstate = Options;
+	}
 }
+
+void optionsLoop()
+{
+	SDL_Rect qhd = { 128, 64, 200, 50 };
+	SDL_Rect fhd = { 128, 128, 200, 50 };
+	SDL_Rect hd = { 128, 192, 200, 50 };
+	SDL_Rect back = { 0, 0, 50, 50 };
+	if ((SDL_PointInRect(&mouse, &qhd)) && IsMousePressed(SDL_BUTTON_LMASK))
+	{
+		WW = 2560;
+		WH = 1440;	
+		scale = 2;
+	}
+	if ((SDL_PointInRect(&mouse, &fhd)) && IsMousePressed(SDL_BUTTON_LMASK))
+	{
+		WW = 1920;
+		WH = 1080;
+		scale = 1.5;
+	}
+	if ((SDL_PointInRect(&mouse, &hd)) && IsMousePressed(SDL_BUTTON_LMASK))
+	{
+		WW = 1280;
+		WH = 720;
+		scale = 1;
+	}
+	if ((SDL_PointInRect(&mouse, &back)) && IsMousePressed(SDL_BUTTON_LMASK))
+	{
+		curstate = Menu;
+	}
+	SDL_SetWindowPosition(gWindow, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+	SDL_SetWindowSize(gWindow, WW, WH);
+	tran.w = WW;
+	player.body.x = WW / 2;
+	player.body.y = (WH / 6) * 3;
+}
+
 void shopLoop(float dt)
 {
 	if (sec >= 1)
@@ -309,12 +359,12 @@ void shopLoop(float dt)
 		{
 		case(0):
 		{
-			item[shopitem].price = rand() % 20 + 80;
+			item[shopitem].price = price1;
 			break;
 		}
 		case(1):
 		{
-			item[shopitem].price = rand() % 20 + 30;
+			item[shopitem].price = price2;
 			break;
 		}
 		}
@@ -337,6 +387,19 @@ void shopLoop(float dt)
 	{ 
 		inputcool = 0.2;
 		shopitem = rand() % 2;
+		switch (shopitem)
+		{
+		case(0):
+		{
+			item[shopitem].price = price1;
+			break;
+		}
+		case(1):
+		{
+			item[shopitem].price = price2;
+			break;
+		}
+		}
 	}
 	timeleft -= dt;
 	timeleftint = timeleft + 1;
@@ -353,6 +416,10 @@ void shopLoop(float dt)
 }
 void dungeonLoop(float dt)
 {
+	if (player.hp <= 0)
+	{
+		curstate = GameOver;
+	}
 	if (sec >= 1)
 	{
 		if (sword.cooldown > 0)
@@ -378,9 +445,10 @@ void dungeonLoop(float dt)
 	{
 		if (enemy[i].alive)
 		{
-			if (enemy[i].body.x > WW || enemy[i].body.x < -enemy[i].body.w || enemy[i].body.y > player.body.y + player.body.h)
+			if (SDL_HasIntersection(&player.body, &enemy[i].body))
 			{
 				enemy[i].alive = false;
+				player.hp--;
 				break;
 			}
 			switch (enemy[i].direction)
@@ -419,7 +487,7 @@ void dungeonLoop(float dt)
 	else if (IsKeyDown(SDL_SCANCODE_W) && sword.cooldown <= 0 && inputcool <= 0)
 	{
 		inputcool = 0.2;
-		sword.cooldown = 3;
+		sword.cooldown = cd1;
 		for (int i = 0; i < sizeof(enemy) / sizeof(Enemy); i++)
 		{
 			if (enemy[i].type == Goblin)
@@ -431,7 +499,7 @@ void dungeonLoop(float dt)
 	else if (IsKeyDown(SDL_SCANCODE_E) && batbgone.cooldown <= 0 && inputcool <= 0)
 	{
 		inputcool = 0.2;
-		batbgone.cooldown = 3;
+		batbgone.cooldown = cd1;
 		for (int i = 0; i < sizeof(enemy) / sizeof(Enemy); i++)
 		{
 			if (enemy[i].type == Bat)
@@ -444,7 +512,7 @@ void dungeonLoop(float dt)
 	{
 		inputcool = 0.2;
 		SDL_Rect flailbox = { player.body.x - 400, 0, 400 + player.body.w + 400, WH };
-		flail.cooldown = 4;
+		flail.cooldown = cd2;
 		for (int i = 0; i < sizeof(enemy) / sizeof(Enemy); i++)
 		{
 			if (SDL_HasIntersection(&flailbox, &enemy[i].body))
@@ -467,7 +535,13 @@ void dungeonLoop(float dt)
 	{
 		curstate = Shop;
 		timeleft = 10;
-
+		for (int i = 0; i < sizeof(enemy) / sizeof(Enemy); i++)
+		{
+			if (enemy[i].alive)
+			{
+				enemy[i].alive = false;
+			}
+		}
 	}
 
 }
@@ -492,6 +566,9 @@ void Update(float dt)
 		dungeonLoop(dt);
 		break;
 	}
+	case Options:
+		optionsLoop();
+		break;
 	}
 
 	if (IsKeyDown(SDL_SCANCODE_ESCAPE))
@@ -502,7 +579,6 @@ void menuRen()
 {
 	SDL_Color text = { 0, 0, 0 };
 	SDL_Rect bg = { 0, 0, WW, WH };
-	SDL_Rect bb = { 0, WH - 128, WW, 128 };
 	SDL_Rect Start = { 64, 64, 150, 50 };
 	SDL_Rect Options = { Start.x, Start.y + 64, 150, 50 };
 
@@ -518,6 +594,22 @@ void menuRen()
 	SDL_FreeSurface(Startbtn);
 	SDL_FreeSurface(Optionsbtn);
 
+}
+
+void optionsRen()
+{
+	SDL_Rect bg = { 0, 0, WW, WH };
+	SDL_Rect qhd = { 64, 64, 200, 50 };
+	SDL_Rect fhd = { 64, 128, 200, 50 };
+	SDL_Rect hd = { 64, 192, 200, 50 };
+	SDL_Rect back = { 0, 0, 50, 50 };
+	SDL_SetRenderDrawColor(gRenderer, 255, 0, 0, 255);
+	SDL_RenderFillRect(gRenderer, &bg);
+	SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 255);
+	SDL_RenderFillRect(gRenderer, &qhd);
+	SDL_RenderFillRect(gRenderer, &fhd);
+	SDL_RenderFillRect(gRenderer, &hd);
+	SDL_RenderFillRect(gRenderer, &back);
 }
 
 void shopRen(SDL_Rect bb, SDL_Rect tb)
@@ -640,8 +732,10 @@ void uiRen(SDL_Rect bb, SDL_Rect tb)
 	SDL_Rect Timeleft = { WW / 2 - 30, -10, 60, 100 };
 	SDL_Rect Item1ic = { Item0ic.x + 100, Item0ic.y, 60, 60 };
 	SDL_Rect Item1amm = { Item1ic.x + 10, Item1ic.y + 55, 40, 60 };
-	SDL_Rect Fllic = { Bbgic.x - 100, bb.y - 16, 60, 60 };
+	SDL_Rect Fllic = { Bbgic.x - 100, bb.y, 60, 60 };
 	SDL_Rect Fllcld = { Fllic.x + 10, Fllic.y + 55, 40, 60 };
+	SDL_Rect Hpic = { (bb.w / 2) - 30, bb.y + 16, 100, 100 };
+	SDL_Rect Hamm = { Hpic.x + Hpic.w / 2 - 20, Hpic.y + Hpic.h + 8, 40, 60 };
 
 	SDL_Surface* item0;
 	SDL_Surface* swdcld;
@@ -649,6 +743,7 @@ void uiRen(SDL_Rect bb, SDL_Rect tb)
 	SDL_Surface* fllcld;
 	SDL_Surface* time;
 	SDL_Surface* item1;
+	SDL_Surface* hamm;
 
 	item0txt << item[0].ammount;
 	swdtxt << sword.cooldown;
@@ -656,6 +751,7 @@ void uiRen(SDL_Rect bb, SDL_Rect tb)
 	flltxt << flail.cooldown;
 	timetxt << timeleftint;
 	item1txt << item[1].ammount;
+	hammtxt << player.hp;
 
 	item0 = TTF_RenderText_Solid(SegoeHeader, item0txt.str().c_str(), wtext);
 	swdcld = TTF_RenderText_Solid(SegoeHeader, swdtxt.str().c_str(), wtext);
@@ -663,6 +759,7 @@ void uiRen(SDL_Rect bb, SDL_Rect tb)
 	time = TTF_RenderText_Solid(SegoeHeader, timetxt.str().c_str(), wtext);
 	item1 = TTF_RenderText_Solid(SegoeHeader, item1txt.str().c_str(), wtext);
 	fllcld  = TTF_RenderText_Solid(SegoeHeader, flltxt.str().c_str(), wtext);
+	hamm = TTF_RenderText_Solid(SegoeHeader, hammtxt.str().c_str(), wtext);
 	SDL_Texture* item0text;
 	item0text = SDL_CreateTextureFromSurface(gRenderer, item0);
 	SDL_Texture* swdtext;
@@ -675,6 +772,8 @@ void uiRen(SDL_Rect bb, SDL_Rect tb)
 	item1text = SDL_CreateTextureFromSurface(gRenderer, item1);
 	SDL_Texture* flltext;
 	flltext = SDL_CreateTextureFromSurface(gRenderer, fllcld);
+	SDL_Texture* hammtext;
+	hammtext = SDL_CreateTextureFromSurface(gRenderer, hamm);
 
 	SDL_RenderCopy(gRenderer, item[0].icon, NULL, &Item0ic);
 	SDL_RenderCopy(gRenderer, item0text, NULL, &Item0amm);
@@ -687,6 +786,9 @@ void uiRen(SDL_Rect bb, SDL_Rect tb)
 	SDL_RenderCopy(gRenderer, item1text, NULL, &Item1amm);
 	SDL_RenderCopy(gRenderer, flail.icon, NULL, &Fllic);
 	SDL_RenderCopy(gRenderer, flltext, NULL, &Fllcld);
+	SDL_RenderCopy(gRenderer, Heart, NULL, &Hpic);
+	SDL_RenderCopy(gRenderer, hammtext, NULL, &Hamm);
+
 
 
 	SDL_DestroyTexture(item0text);
@@ -701,6 +803,8 @@ void uiRen(SDL_Rect bb, SDL_Rect tb)
 	SDL_FreeSurface(item1); 
 	SDL_DestroyTexture(flltext);
 	SDL_FreeSurface(fllcld);
+	SDL_DestroyTexture(hammtext);
+	SDL_FreeSurface(hamm);
 
 	moneytxt.str(std::string());
 	pricetxt.str(std::string());
@@ -710,6 +814,7 @@ void uiRen(SDL_Rect bb, SDL_Rect tb)
 	timetxt.str(std::string());
 	item1txt.str(std::string());
 	flltxt.str(std::string());
+	hammtxt.str(std::string());
 }
 
 void RenderFrame(float interpolation)
@@ -726,23 +831,26 @@ void RenderFrame(float interpolation)
 	}
 	case Dungeon:
 	{
-		SDL_Rect bb = { 0, WH - 256, WW, 256 };
-		SDL_Rect tb = { 0, 0, WW, 128 };
+		SDL_Rect bb = { 0, (WH - 200), WW, 200 * scale };
+		SDL_Rect tb = { 0, 0, WW, 100 * scale };
 		dungeonRen(interpolation, bb, tb);
 		uiRen(bb, tb);
 		break;
 	}
 	case Shop:
 	{
-		SDL_Rect bb = { 0, WH - 256, WW, 256 };
-		SDL_Rect tb = { 0, 0, WW, 128 };
+		SDL_Rect bb = { 0, (WH - 200), WW, 200 * scale };
+		SDL_Rect tb = { 0, 0, WW, 100 * scale };
 		shopRen(bb ,tb);
 		uiRen(bb, tb);
 		break;
 	}
+	case Options:
+	{
+		optionsRen();
+		break;
 	}
-
-
+	}
 	if (laststate != curstate)
 	{
 		Transition();
