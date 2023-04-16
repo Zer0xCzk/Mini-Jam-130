@@ -21,17 +21,22 @@ double scale = 1.5;
 #define price1 (Uint32)rand() % 20 + 80
 #define price2 (Uint32)rand() % 20 + 30
 #define cd1 4
-#define cd2 2
+#define cd2 6
 
 // Forward function declarations
 void Update(float dt);
 void RenderFrame(float dt);
 SDL_Texture* LoadSprite(const char* path);
 
-
+Mix_Chunk* swd = NULL;
+Mix_Chunk* bbg = NULL;
+Mix_Chunk* hhg = NULL;
+Mix_Chunk* fll = NULL;
+Mix_Chunk* bnd = NULL;
+Mix_Chunk* shp = NULL;
+Mix_Chunk* fgt = NULL;
 TTF_Font* SegoeHeader;
 TTF_Font* Segoep;
-SDL_Texture* Starts;
 SDL_Texture* Shopbg;
 SDL_Texture* Shopbuy;
 SDL_Texture* Shopbuyi;
@@ -42,13 +47,17 @@ SDL_Texture* Shophagi;
 SDL_Texture* Battex;
 SDL_Texture* Gobtex;
 SDL_Texture* Heart;
+SDL_Texture* Menubg;
+SDL_Texture* Dungeonbg;
+SDL_Texture* tuttxt;
+SDL_Texture* pback;
 Item item[2];
 Weapon sword = { NULL, cd1 };
 Weapon batbgone = { NULL, cd1 };
 Weapon flail = { NULL, 6 };
 SDL_Point mouse;
 SDL_Rect tran{ 0, 0, WW, 0};
-Player player = { NULL, {WW / 2, (WH / 6) * 3, 64, 128}, 20 };
+Player player = { NULL, { WW / 2 - (75 * scale) / 2, (WH / 6) * 3, 75 * scale, 150 * scale }, 20 };
 Enemy enemy[15];
 bool scrolled = false;
 float timeleft = 10;
@@ -56,9 +65,11 @@ int timeleftint = 10;
 int money = 100;
 float  lastspawn = 40;
 int shopitem;
+int red = 0;
+int score = 0;
 float sec = 0;
 double inputcool = 0.3;
-std::stringstream moneytxt, pricetxt, item0txt, swdtxt, bbgtxt, timetxt, item1txt, flltxt, hammtxt;
+std::stringstream moneytxt, pricetxt, item0txt, swdtxt, bbgtxt, timetxt, item1txt, flltxt, hammtxt, scoretxt;
 //=============================================================================
 void itemLoad()
 {
@@ -66,18 +77,17 @@ void itemLoad()
 		NULL,
 		"Holy Handgrenade",
 		"Kills everything on screen (Especially rabbits)",
-		 price1
+		price1
 	};
 	item[1] = {
 		NULL,
 		"Bandage",
-		"A regular bandage, heals 5 hp",
+		"A regular bandage, heals 2 hp",
 		price2
 	};
 }
 void textureLoad()
 {
-	Starts = LoadSprite("assets/menus/Start.png");
 	Shopbg = LoadSprite("assets/shops/bg.png");
 	Shopbuy = LoadSprite("assets/shops/buy.png");
 	Shopbuyi = LoadSprite("assets/shops/space.png");
@@ -93,12 +103,13 @@ void textureLoad()
 	batbgone.icon = LoadSprite("assets/items/bbg.png");
 	flail.icon = LoadSprite("assets/items/flail.png");
 	Heart = LoadSprite("assets/items/heart.png");
-
+	Menubg = LoadSprite("assets/menus/bg.png");
+	Dungeonbg = LoadSprite("assets/enemys/bg.png");
+	tuttxt = LoadSprite("assets/menus/ttext.png");
+	pback = LoadSprite("assets/menus/pback.png");
 }
 void textureDestroy()
 {
-	if (Starts)
-		SDL_DestroyTexture(Starts);
 	if (Shopbg)
 		SDL_DestroyTexture(Shopbg);
 	if (Shopbuy)
@@ -129,6 +140,12 @@ void textureDestroy()
 		SDL_DestroyTexture(flail.icon);
 	if (Heart)
 		SDL_DestroyTexture(Heart);
+	if (Menubg)
+		SDL_DestroyTexture(Menubg);
+	if (Dungeonbg)
+		SDL_DestroyTexture(Dungeonbg);
+	if (tuttxt)
+		SDL_DestroyTexture(tuttxt);
 }
 
 
@@ -141,22 +158,37 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	if (!CreateWindow("The Game", WW, WH))
+	if (!CreateWindow("Moon's madness", WW, WH))
 	{
 		return 1;
 	}
+
+	Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 4096);
 
 	itemLoad();
 	textureLoad();
 	SegoeHeader = TTF_OpenFont("assets/font/SEGOEUI.TTF", 20);
 	Segoep = TTF_OpenFont("assets/font/SEGOEUI.TTF", 12);
-	
+	swd = Mix_LoadWAV("assets/sfx/swd.wav");
+	bbg = Mix_LoadWAV("assets/sfx/bbg.wav");
+	fll = Mix_LoadWAV("assets/sfx/fll.wav");
+	hhg = Mix_LoadWAV("assets/sfx/hhg.wav");
+	bnd = Mix_LoadWAV("assets/sfx/bnd.wav");
+	shp = Mix_LoadWAV("assets/sfx/shp.wav");
+	fgt = Mix_LoadWAV("assets/sfx/fgt.wav");
 
 	StartLoop(Update, RenderFrame);
 
 	textureDestroy();
 	TTF_CloseFont(SegoeHeader);
 	TTF_CloseFont(Segoep);
+	Mix_FreeChunk(bbg);
+	Mix_FreeChunk(fll);
+	Mix_FreeChunk(swd);
+	Mix_FreeChunk(hhg);
+	Mix_FreeChunk(bnd);
+	Mix_FreeChunk(shp);
+	Mix_FreeChunk(fgt);
 
 	DeinitSDL();
 	return 0;
@@ -193,8 +225,8 @@ void enemySpawn()
 				{
 				case(Left):
 				{
-					enemy[i].body.w = 100 * scale;
-					enemy[i].body.h = 100 * scale;
+					enemy[i].body.w = 150 * scale;
+					enemy[i].body.h = 150 * scale;
 					enemy[i].alive = true;
 					enemy[i].body.x = WW - enemy[i].body.w;
 					enemy[i].body.y = 0 + (WH / 4);
@@ -202,8 +234,8 @@ void enemySpawn()
 				}
 				case(Right):
 				{
-					enemy[i].body.w = 100 * scale;
-					enemy[i].body.h = 100 * scale;
+					enemy[i].body.w = 150 * scale;
+					enemy[i].body.h = 150 * scale;
 					enemy[i].alive = true;
 					enemy[i].body.x = 0;
 					enemy[i].body.y = 0 + WH / 4;
@@ -218,8 +250,8 @@ void enemySpawn()
 				{
 				case(Left):
 				{
-					enemy[i].body.w = 100 * scale;
-					enemy[i].body.h = 100 * scale;
+					enemy[i].body.w = 150 * scale;
+					enemy[i].body.h = 150 * scale;
 					enemy[i].alive = true;
 					enemy[i].body.x = (WW - enemy[i].body.w);
 					enemy[i].body.y = 0 + WH / 2;
@@ -227,8 +259,8 @@ void enemySpawn()
 				}
 				case(Right):
 				{
-					enemy[i].body.w = 100 * scale;
-					enemy[i].body.h = 100 * scale;
+					enemy[i].body.w = 150 * scale;
+					enemy[i].body.h = 150 * scale;
 					enemy[i].alive = true;
 					enemy[i].body.x = 0;
 					enemy[i].body.y = 0 + WH / 2;
@@ -262,14 +294,14 @@ void Transition()
 	{
 		SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 255);
 		SDL_RenderFillRect(gRenderer, &tran);
-		tran.h +=10;
+		tran.h +=10 * scale;
 	}
 	else if (tran.h > 0 && scrolled == true)
 	{
 		renstate = curstate;
 		SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 255);
 		SDL_RenderFillRect(gRenderer, &tran);
-		tran.h -= 10;
+		tran.h -= 10 * scale;
 	}
 	else
 	{
@@ -280,11 +312,11 @@ void Transition()
 
 void menuLoop()
 {
-	SDL_Rect start = { 64, 64, 200, 50 };
-	SDL_Rect options = { start.x, start.y + 64, 200, 50 };
+	SDL_Rect start = { 64, 128, 150, 75 };
+	SDL_Rect options = { start.x, start.y + 64, 150, 75 };
 	if ((SDL_PointInRect(&mouse, &start)) && IsMousePressed(SDL_BUTTON_LMASK))
 	{
-		curstate = Shop;
+		curstate = Tutorial;
 	}
 	if ((SDL_PointInRect(&mouse, &options)) && IsMousePressed(SDL_BUTTON_LMASK))
 	{
@@ -294,10 +326,10 @@ void menuLoop()
 
 void optionsLoop()
 {
-	SDL_Rect qhd = { 128, 64, 200, 50 };
-	SDL_Rect fhd = { 128, 128, 200, 50 };
-	SDL_Rect hd = { 128, 192, 200, 50 };
-	SDL_Rect back = { 0, 0, 50, 50 };
+	SDL_Rect qhd = { 100, 175, 200, 50 };
+	SDL_Rect fhd = { 100, 250, 200, 50 };
+	SDL_Rect hd = { 100, 325, 200, 50 };
+	SDL_Rect back = { 100, WH / 4 * 3 - 64, 150, 50 };
 	if ((SDL_PointInRect(&mouse, &qhd)) && IsMousePressed(SDL_BUTTON_LMASK))
 	{
 		WW = 2560;
@@ -323,12 +355,20 @@ void optionsLoop()
 	SDL_SetWindowPosition(gWindow, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 	SDL_SetWindowSize(gWindow, WW, WH);
 	tran.w = WW;
-	player.body.x = WW / 2;
+	player.body.w = 75 * scale;
+	player.body.h = 150 * scale;
+	player.body.x = WW / 2 - player.body.w / 2;
 	player.body.y = (WH / 6) * 3;
+	for (int i = 0; i < sizeof(enemy) / sizeof(Enemy); i++)
+	{
+		enemy[i].body.w = 150 * scale;
+		enemy[i].body.h = 150 * scale;
+	}
 }
 
 void shopLoop(float dt)
 {
+	red++;
 	if (sec >= 1)
 	{
 		if (sword.cooldown > 0)
@@ -349,7 +389,6 @@ void shopLoop(float dt)
 	{
 		sec += dt;
 	}
-	int lastitem = shopitem;
 	if (IsKeyDown(SDL_SCANCODE_SPACE) && money > item[shopitem].price + 1 && inputcool <= 0)
 	{
 		inputcool = 0.2;
@@ -410,6 +449,7 @@ void shopLoop(float dt)
 	}
 	if (timeleft <= 0)
 	{
+		Mix_PlayChannel(-1, fgt, 0);
 		curstate = Dungeon;
 		timeleft = 10;
 	}
@@ -419,6 +459,7 @@ void dungeonLoop(float dt)
 	if (player.hp <= 0)
 	{
 		curstate = GameOver;
+		Mix_CloseAudio();
 	}
 	if (sec >= 1)
 	{
@@ -477,55 +518,71 @@ void dungeonLoop(float dt)
 	}
 	if (IsKeyDown(SDL_SCANCODE_Q) && item[0].ammount > 0 && inputcool <= 0)
 	{
+		Mix_PlayChannel(-1, hhg, 0);
+		Mix_GetError();
 		inputcool = 0.2;
 		item[0].ammount--;
 		for (int i = 0; i < sizeof(enemy) / sizeof(Enemy); i++)
 		{
-			enemy[i].alive = false;
+			if (enemy[i].alive)
+			{
+				enemy[i].alive = false;
+				score++;
+			}
 		}
 	}
-	else if (IsKeyDown(SDL_SCANCODE_W) && sword.cooldown <= 0 && inputcool <= 0)
+	else if (IsKeyDown(SDL_SCANCODE_W) && item[1].ammount > 0 && inputcool <= 0)
 	{
+		Mix_PlayChannel(-1, bnd, 0);
+		inputcool = 0.2;
+		item[1].ammount--;
+		player.hp += 2;
+	}
+	else if (IsKeyDown(SDL_SCANCODE_E) && sword.cooldown <= 0 && inputcool <= 0)
+	{
+		Mix_PlayChannel(-1, swd, 0);
 		inputcool = 0.2;
 		sword.cooldown = cd1;
 		for (int i = 0; i < sizeof(enemy) / sizeof(Enemy); i++)
 		{
-			if (enemy[i].type == Goblin)
+			if (enemy[i].type == Goblin && enemy[i].alive)
 			{
+				money++;
+				score++;
 				enemy[i].alive = false;
 			}
 		}
 	}
-	else if (IsKeyDown(SDL_SCANCODE_E) && batbgone.cooldown <= 0 && inputcool <= 0)
+	else if (IsKeyDown(SDL_SCANCODE_R) && batbgone.cooldown <= 0 && inputcool <= 0)
 	{
+		Mix_PlayChannel(-1, bbg, 0);
 		inputcool = 0.2;
 		batbgone.cooldown = cd1;
 		for (int i = 0; i < sizeof(enemy) / sizeof(Enemy); i++)
 		{
-			if (enemy[i].type == Bat)
+			if (enemy[i].type == Bat && enemy[i].alive)
 			{
+				money++;
+				score++;
 				enemy[i].alive = false;
 			}
 		}
 	}
-	else if (IsKeyDown(SDL_SCANCODE_R) && flail.cooldown <= 0 && inputcool <= 0)
+	else if (IsKeyDown(SDL_SCANCODE_T) && flail.cooldown <= 0 && inputcool <= 0)
 	{
+		Mix_PlayChannel(-1, fll, 0);
 		inputcool = 0.2;
 		SDL_Rect flailbox = { player.body.x - 400, 0, 400 + player.body.w + 400, WH };
 		flail.cooldown = cd2;
 		for (int i = 0; i < sizeof(enemy) / sizeof(Enemy); i++)
 		{
-			if (SDL_HasIntersection(&flailbox, &enemy[i].body))
+			if (SDL_HasIntersection(&flailbox, &enemy[i].body) && enemy[i].alive)
 			{
+				money++;
+				score++;
 				enemy[i].alive = false;
 			}
 		}
-	}
-	else if (IsKeyDown(SDL_SCANCODE_SPACE) && item[1].ammount > 0 && inputcool <= 0)
-	{
-		inputcool = 0.2;
-		item[1].ammount--;
-		player.hp += 5;
 	}
 	
 	timeleft -= dt;
@@ -533,10 +590,16 @@ void dungeonLoop(float dt)
 	inputcool -= dt;
 	if (timeleft <= 0)
 	{
+		Mix_PlayChannel(-1, shp, 0);
+		red = 0;
 		curstate = Shop;
 		timeleft = 10;
 		for (int i = 0; i < sizeof(enemy) / sizeof(Enemy); i++)
 		{
+			if (enemy[i].speed < 600 * scale)
+			{
+				enemy[i].speed += 10 * scale;
+			}
 			if (enemy[i].alive)
 			{
 				enemy[i].alive = false;
@@ -544,6 +607,15 @@ void dungeonLoop(float dt)
 		}
 	}
 
+}
+
+void tutorialLoop()
+{
+	if (IsKeyDown(SDL_SCANCODE_SPACE))
+	{
+		curstate = Shop;
+		Mix_PlayChannel(-1, shp, 0);
+	}
 }
 
 void Update(float dt)
@@ -567,9 +639,17 @@ void Update(float dt)
 		break;
 	}
 	case Options:
+	{
 		optionsLoop();
 		break;
 	}
+	case Tutorial:
+	{
+		tutorialLoop();
+		break;
+	}
+	}
+	
 
 	if (IsKeyDown(SDL_SCANCODE_ESCAPE))
 		ExitGame();
@@ -577,39 +657,84 @@ void Update(float dt)
 
 void menuRen()
 {
-	SDL_Color text = { 0, 0, 0 };
+	SDL_Color text = { 255, 255, 255 };
 	SDL_Rect bg = { 0, 0, WW, WH };
-	SDL_Rect Start = { 64, 64, 150, 50 };
-	SDL_Rect Options = { Start.x, Start.y + 64, 150, 50 };
+	SDL_Rect Start = { 64, 128, 150, 75 };
+	SDL_Rect Options = { Start.x, Start.y + 64, 150, 75 };
+	SDL_Rect name = { 64, 0, 300, 100 };
 
 	SDL_Surface* Startbtn = TTF_RenderText_Solid(SegoeHeader, "Start", text);
 	SDL_Surface* Optionsbtn = TTF_RenderText_Solid(SegoeHeader, "Options", text);
+	SDL_Surface* namesrf = TTF_RenderText_Solid(SegoeHeader, "Moon's madness", text);
 
-	SDL_SetRenderDrawColor(gRenderer, 255, 255, 255, 255);
-	SDL_RenderFillRect(gRenderer, &bg);
+	SDL_RenderCopy(gRenderer, Menubg, NULL, &bg);
 
-	SDL_RenderCopy(gRenderer, SDL_CreateTextureFromSurface(gRenderer, Startbtn), NULL, &Start);
-	SDL_RenderCopy(gRenderer, SDL_CreateTextureFromSurface(gRenderer, Optionsbtn), NULL, &Options);
+	SDL_Texture* starttext = SDL_CreateTextureFromSurface(gRenderer, Startbtn);
+	SDL_Texture* optionstext = SDL_CreateTextureFromSurface(gRenderer, Optionsbtn);
+	SDL_Texture* nametext = SDL_CreateTextureFromSurface(gRenderer, namesrf);
+
+	SDL_RenderCopy(gRenderer, starttext, NULL, &Start);
+	SDL_RenderCopy(gRenderer,  optionstext, NULL, &Options);
+	SDL_RenderCopy(gRenderer, nametext, NULL, &name);
 
 	SDL_FreeSurface(Startbtn);
 	SDL_FreeSurface(Optionsbtn);
+	SDL_FreeSurface(namesrf);
 
+	SDL_DestroyTexture(optionstext);
+	SDL_DestroyTexture(starttext);
+	SDL_DestroyTexture(nametext);
 }
 
 void optionsRen()
 {
+	SDL_Color text = { 255, 255, 255 };
 	SDL_Rect bg = { 0, 0, WW, WH };
-	SDL_Rect qhd = { 64, 64, 200, 50 };
-	SDL_Rect fhd = { 64, 128, 200, 50 };
-	SDL_Rect hd = { 64, 192, 200, 50 };
-	SDL_Rect back = { 0, 0, 50, 50 };
-	SDL_SetRenderDrawColor(gRenderer, 255, 0, 0, 255);
-	SDL_RenderFillRect(gRenderer, &bg);
-	SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 255);
-	SDL_RenderFillRect(gRenderer, &qhd);
-	SDL_RenderFillRect(gRenderer, &fhd);
-	SDL_RenderFillRect(gRenderer, &hd);
+	SDL_Rect halfbg = { 64, 64, WW / 2 - halfbg.x, WH / 4 * 3 - halfbg.y };
+	SDL_Rect resmenu = { 100, 100, 300, 300 };
+	SDL_Rect resolution = { 100, 100, 250, 75 };
+	SDL_Rect qhd = { 100, 175, 200, 50 };
+	SDL_Rect fhd = { 100, 250, 200, 50 };
+	SDL_Rect hd = { 100, 325, 200, 50 };
+	SDL_Rect back = { 100, WH / 4 * 3 - 64, 150, 50 };
+
+	SDL_Surface* resbtn = TTF_RenderText_Solid(SegoeHeader, "Resolution", text);
+	SDL_Surface* qhdbtn = TTF_RenderText_Solid(SegoeHeader, "2560x1440", text);
+	SDL_Surface* fhdbtn = TTF_RenderText_Solid(SegoeHeader, "1920x1080", text);
+	SDL_Surface* hdbtn = TTF_RenderText_Solid(SegoeHeader, "1280x720", text);
+	SDL_Surface* backbtn = TTF_RenderText_Solid(SegoeHeader, "Return", text);
+	
+	SDL_SetRenderDrawColor(gRenderer, 255, 255, 255, 100);
+	SDL_RenderCopy(gRenderer, Menubg, NULL, &bg);
+	SDL_RenderFillRect(gRenderer, &halfbg);
+	SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 50);
 	SDL_RenderFillRect(gRenderer, &back);
+	SDL_RenderFillRect(gRenderer, &resmenu);
+
+	SDL_Texture* restxt = SDL_CreateTextureFromSurface(gRenderer, resbtn);
+	SDL_Texture* qhdtxt = SDL_CreateTextureFromSurface(gRenderer, qhdbtn);
+	SDL_Texture* fhdtxt = SDL_CreateTextureFromSurface(gRenderer, fhdbtn);
+	SDL_Texture* hdtxt = SDL_CreateTextureFromSurface(gRenderer, hdbtn);
+	SDL_Texture* backtxt = SDL_CreateTextureFromSurface(gRenderer, backbtn);
+
+	SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 255);
+	SDL_RenderCopy(gRenderer, restxt, NULL, &resolution);
+	SDL_RenderCopy(gRenderer, qhdtxt, NULL, &qhd);
+	SDL_RenderCopy(gRenderer, fhdtxt, NULL, &fhd);
+	SDL_RenderCopy(gRenderer, hdtxt, NULL, &hd);
+	SDL_RenderCopy(gRenderer, backtxt, NULL, &back);
+
+	SDL_FreeSurface(resbtn);
+	SDL_FreeSurface(qhdbtn);
+	SDL_FreeSurface(fhdbtn);
+	SDL_FreeSurface(hdbtn);
+	SDL_FreeSurface(backbtn);
+
+	SDL_DestroyTexture(restxt);
+	SDL_DestroyTexture(qhdtxt);
+	SDL_DestroyTexture(fhdtxt);
+	SDL_DestroyTexture(hdtxt);
+	SDL_DestroyTexture(backtxt);
 }
 
 void shopRen(SDL_Rect bb, SDL_Rect tb)
@@ -617,7 +742,7 @@ void shopRen(SDL_Rect bb, SDL_Rect tb)
 	SDL_Color text = { 0, 0, 0 };
 	SDL_Color wtext = { 255, 255, 255 };
 	SDL_Rect bg = { 0, 0, WW, WH };
-	SDL_Rect player = { WW / 2, (WH / 6) * 3, 64, 128 };
+	SDL_Rect player = { WW / 2 - (75 * scale) / 2, (WH / 6) * 3, 75 * scale, 150 * scale };
 	SDL_Rect Shopmenu = { WW / 2 - 256, WH / 2 - 128, 512, 256 };
 	SDL_Rect ItemPedestal = { Shopmenu.x + Shopmenu.w / 2 - 50, Shopmenu.y + 16, 100, 100 };
 	SDL_Rect Shopbuyico = { ItemPedestal.x - 150, ItemPedestal.y + 32, 64, 32 };
@@ -630,13 +755,16 @@ void shopRen(SDL_Rect bb, SDL_Rect tb)
 	SDL_Rect Header = { ItemPedestal.x - 50, ItemPedestal.y + ItemPedestal.h, 200, 32 };
 	SDL_Rect Description = { Header.x - 100, Header.y + Header.h + 16, 400, 32 };
 	SDL_Rect PMoney = { Shopmenu.x , Shopmenu.y + Shopmenu.h - 32, 32, 32 };
-	SDL_Rect Price = { Shopmenu.x + Shopmenu.w - 32 , Shopmenu.y + Shopmenu.h - 32, 32, 32 };
+	SDL_Rect Price = { Shopmenu.x + Shopmenu.w - 32 , Shopmenu.y + Shopmenu.h -32, 32, 32 };
+	SDL_Rect tg = { 0, 0, WW, WH };
 	SDL_Surface* header;
 	SDL_Surface* description;
 	SDL_Surface* pmoney;
 	SDL_Surface* price;
+
 	moneytxt << money;
 	pricetxt << item[shopitem].price;
+	
 	SDL_RenderCopy(gRenderer, Shopbg, NULL, &bg);
 	SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 255);
 	SDL_RenderFillRect(gRenderer, &bb);
@@ -655,7 +783,7 @@ void shopRen(SDL_Rect bb, SDL_Rect tb)
 	pricetext = SDL_CreateTextureFromSurface(gRenderer, price);
 	
 	SDL_SetRenderDrawColor(gRenderer, 255, 0, 0, 255);
-	SDL_RenderFillRect(gRenderer, &player);
+	SDL_RenderCopy(gRenderer, pback , NULL, &player);
 	SDL_SetRenderDrawColor(gRenderer, 255, 255, 255, 100);
 	SDL_RenderFillRect(gRenderer, &Shopmenu);
 	SDL_RenderCopy(gRenderer, Shopbuyi, NULL, &Shopbuyico);
@@ -671,6 +799,10 @@ void shopRen(SDL_Rect bb, SDL_Rect tb)
 	SDL_RenderCopy(gRenderer, descriptiontxt, NULL, &Description);
 	SDL_RenderCopy(gRenderer, pmoneytxt, NULL, &PMoney);
 	SDL_RenderCopy(gRenderer, pricetext, NULL, &Price);
+
+	SDL_SetRenderDrawColor(gRenderer, 255, 0, 0, red / 30);
+	SDL_RenderFillRect(gRenderer, &tg);
+
 	SDL_DestroyTexture(headertxt);
 	SDL_FreeSurface(header);
 	SDL_DestroyTexture(descriptiontxt);
@@ -708,12 +840,12 @@ void enemyRen(float dt)
 void dungeonRen(float interpolation, SDL_Rect bb, SDL_Rect tb)
 {
 	SDL_Rect bg = { 0, 0, WW, WH };
-	SDL_SetRenderDrawColor(gRenderer, 0, 255, 0, 255);
-	SDL_RenderFillRect(gRenderer, &bg);
+	SDL_Rect player = { WW / 2 - (75 * scale) / 2, (WH / 6) * 3, 75 * scale, 150 * scale };
+	SDL_RenderCopy(gRenderer, Dungeonbg, NULL, &bg);
 	SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 255);
 	
 	
-	SDL_RenderFillRect(gRenderer, &player.body);
+	SDL_RenderCopy(gRenderer, pback, NULL, &player);
 	enemyRen(interpolation);
 	SDL_RenderFillRect(gRenderer, &bb);
 	SDL_RenderFillRect(gRenderer, &tb);
@@ -725,17 +857,17 @@ void uiRen(SDL_Rect bb, SDL_Rect tb)
 	SDL_Color wtext = { 255, 255, 255 };
 	SDL_Rect Item0ic = { bb.x, bb.y, 60, 60 };
 	SDL_Rect Item0amm = { Item0ic.x + 10, Item0ic.y + 55, 40, 60 };
-	SDL_Rect Swdic = { bb.x + bb.w - 100, bb.y, 60, 60 };
+	SDL_Rect Swdic = { bb.w - 100, bb.y, 60, 60 };
 	SDL_Rect Swdcld = { Swdic.x + 10, Swdic.y + 55, 40, 60 };
 	SDL_Rect Bbgic = { Swdic.x - 100, bb.y, 60, 60 };
 	SDL_Rect Bbgcld = { Bbgic.x + 10, Bbgic.y + 55, 40, 60 };
-	SDL_Rect Timeleft = { WW / 2 - 30, -10, 60, 100 };
+	SDL_Rect Timeleft = { bb.w / 2 - 30, bb.y + 16, 60, 100 };
 	SDL_Rect Item1ic = { Item0ic.x + 100, Item0ic.y, 60, 60 };
 	SDL_Rect Item1amm = { Item1ic.x + 10, Item1ic.y + 55, 40, 60 };
 	SDL_Rect Fllic = { Bbgic.x - 100, bb.y, 60, 60 };
 	SDL_Rect Fllcld = { Fllic.x + 10, Fllic.y + 55, 40, 60 };
-	SDL_Rect Hpic = { (bb.w / 2) - 30, bb.y + 16, 100, 100 };
-	SDL_Rect Hamm = { Hpic.x + Hpic.w / 2 - 20, Hpic.y + Hpic.h + 8, 40, 60 };
+	SDL_Rect Hpic = { (tb.w / 2) - 50, tb.y, 100, 100 };
+	SDL_Rect Hamm = { Hpic.x + Hpic.w / 2 - 20, Hpic.y + Hpic.h - 8, 40, 60 };
 
 	SDL_Surface* item0;
 	SDL_Surface* swdcld;
@@ -817,6 +949,62 @@ void uiRen(SDL_Rect bb, SDL_Rect tb)
 	hammtxt.str(std::string());
 }
 
+void gameOverRen()
+{
+	SDL_Color text = { 0, 0, 0 };
+	SDL_Rect bg = { 0, 0, WW, WH };
+	SDL_Rect GOtext = { WW / 2 - 100, WH / 2 - 50, 200, 100 };
+	SDL_Rect Scoretext = { GOtext.x - 25, GOtext.y + 100, 200, 100 };
+	SDL_Rect Score = { Scoretext.x + Scoretext.w + 8, Scoretext.y, 50, 100 };
+	SDL_Rect leave = { WW / 2 - 200, WH - 150, 400, 100 };
+
+	scoretxt << score;
+	
+	SDL_Surface* GObtn = TTF_RenderText_Solid(SegoeHeader, "Game Over", text);
+	SDL_Surface* scoretext = TTF_RenderText_Solid(Segoep, "Your kills: ", text);
+	SDL_Surface* score = TTF_RenderText_Solid(Segoep, scoretxt.str().c_str(), text);
+	SDL_Surface* textsrf = TTF_RenderText_Solid(Segoep, "Press Escape to quit the game", text);
+
+
+	SDL_SetRenderDrawColor(gRenderer, 255, 255, 255, 255);
+	SDL_RenderFillRect(gRenderer, &bg);
+
+	SDL_Texture* gotxt = SDL_CreateTextureFromSurface(gRenderer, GObtn);
+	SDL_Texture* scrtxt = SDL_CreateTextureFromSurface(gRenderer, scoretext);
+	SDL_Texture* scr = SDL_CreateTextureFromSurface(gRenderer, score);
+	SDL_Texture* texttxt = SDL_CreateTextureFromSurface(gRenderer, textsrf);
+
+	SDL_RenderCopy(gRenderer, gotxt, NULL, &GOtext);
+	SDL_RenderCopy(gRenderer, scrtxt, NULL, &Scoretext);
+	SDL_RenderCopy(gRenderer, scr, NULL, &Score);
+	SDL_RenderCopy(gRenderer, texttxt, NULL, &leave);
+
+	SDL_FreeSurface(GObtn);
+	SDL_FreeSurface(scoretext);
+	SDL_FreeSurface(score);
+	SDL_FreeSurface(textsrf);
+
+	SDL_DestroyTexture(gotxt);
+	SDL_DestroyTexture(scrtxt);
+	SDL_DestroyTexture(scr);
+	SDL_DestroyTexture(texttxt);
+
+	scoretxt.str(std::string());
+}
+
+void tutorialRen()
+{
+	SDL_Rect bg = { 0, 0, WW, WH };
+	SDL_Rect tut = { 0, 0, WW, WH };
+	SDL_Rect tutbg = { WW / 5, 0, WW / 5 * 3, WH };
+	SDL_SetRenderDrawColor(gRenderer, 255, 255, 255, 100);
+
+	SDL_RenderCopy(gRenderer, Menubg, NULL, &bg);
+	SDL_RenderFillRect(gRenderer, &tutbg);
+	SDL_RenderCopy(gRenderer, tuttxt, NULL, &tut);
+	
+}
+
 void RenderFrame(float interpolation)
 {
 	// Clear screen
@@ -849,6 +1037,15 @@ void RenderFrame(float interpolation)
 	{
 		optionsRen();
 		break;
+	}
+	case GameOver:
+	{
+		gameOverRen();
+		break;
+	}
+	case Tutorial:
+	{
+		tutorialRen();
 	}
 	}
 	if (laststate != curstate)
