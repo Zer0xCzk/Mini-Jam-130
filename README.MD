@@ -1,4 +1,4 @@
-# SDL2 Game Template
+# Moon's madness
 
 ## Windows setup
 ### 1. Clone this repository
