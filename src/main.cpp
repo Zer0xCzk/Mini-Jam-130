@@ -652,7 +652,7 @@ void Update(float dt)
 	}
 	default:
 	{
-		ExitGame();
+		break;
 	}
 	}
 	
