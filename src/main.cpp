@@ -57,7 +57,7 @@ Weapon batbgone = { NULL, cd1 };
 Weapon flail = { NULL, 6 };
 SDL_Point mouse;
 SDL_Rect tran{ 0, 0, WW, 0};
-Player player = { NULL, { WW / 2 - (75 * scale) / 2, (WH / 6) * 3, 75 * scale, 150 * scale }, 20 };
+Player player = { NULL, { (int)(WW / 2 - (75 * scale) / 2), (WH / 6) * 3, (int)(75 * scale), (int)(150 * scale) }, 20 };
 Enemy enemy[15];
 bool scrolled = false;
 float timeleft = 10;
@@ -77,13 +77,15 @@ void itemLoad()
 		NULL,
 		"Holy Handgrenade",
 		"Kills everything on screen (Especially rabbits)",
-		price1
+		price1,
+		0
 	};
 	item[1] = {
 		NULL,
 		"Bandage",
 		"A regular bandage, heals 2 hp",
-		price2
+		price2,
+		0
 	};
 }
 void textureLoad()
@@ -151,7 +153,7 @@ void textureDestroy()
 
 int main(int argc, char* argv[])
 {
-	srand(time(NULL));
+	srand((unsigned int)time(NULL));
 	shopitem = rand() % 2;
 	if (!InitSDL())
 	{
@@ -204,7 +206,7 @@ void enemySpawn()
 {
 	int etype = rand() % 2;
 	int dir = rand() % 2;
-	for (int i = 0; i < sizeof(enemy) / sizeof(Enemy); i++)
+	for (long unsigned int i = 0; i < sizeof(enemy) / sizeof(Enemy); i++)
 	{
 		if (!enemy[i].alive && lastspawn >= 30)
 		{
@@ -217,7 +219,7 @@ void enemySpawn()
 				enemy[i].direction = Right;
 				break;
 			}
-			enemy[i].type = (type)etype;
+			enemy[i].type = (t)etype;
 			if (enemy[i].type == Bat)
 			{
 				enemy[i].texture = Battex;
@@ -225,8 +227,8 @@ void enemySpawn()
 				{
 				case(Left):
 				{
-					enemy[i].body.w = 150 * scale;
-					enemy[i].body.h = 150 * scale;
+					enemy[i].body.w = (int)(150 * scale);
+					enemy[i].body.h = (int)(150 * scale);
 					enemy[i].alive = true;
 					enemy[i].body.x = WW - enemy[i].body.w;
 					enemy[i].body.y = 0 + (WH / 4);
@@ -234,8 +236,8 @@ void enemySpawn()
 				}
 				case(Right):
 				{
-					enemy[i].body.w = 150 * scale;
-					enemy[i].body.h = 150 * scale;
+					enemy[i].body.w = (int)(150 * scale);
+					enemy[i].body.h = (int)(150 * scale);
 					enemy[i].alive = true;
 					enemy[i].body.x = 0;
 					enemy[i].body.y = 0 + WH / 4;
@@ -250,8 +252,8 @@ void enemySpawn()
 				{
 				case(Left):
 				{
-					enemy[i].body.w = 150 * scale;
-					enemy[i].body.h = 150 * scale;
+					enemy[i].body.w = (int)(150 * scale);
+					enemy[i].body.h = (int)(150 * scale);
 					enemy[i].alive = true;
 					enemy[i].body.x = (WW - enemy[i].body.w);
 					enemy[i].body.y = 0 + WH / 2;
@@ -259,8 +261,8 @@ void enemySpawn()
 				}
 				case(Right):
 				{
-					enemy[i].body.w = 150 * scale;
-					enemy[i].body.h = 150 * scale;
+					enemy[i].body.w = (int)(150 * scale);
+					enemy[i].body.h = (int)(150 * scale);
 					enemy[i].alive = true;
 					enemy[i].body.x = 0;
 					enemy[i].body.y = 0 + WH / 2;
@@ -294,14 +296,14 @@ void Transition()
 	{
 		SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 255);
 		SDL_RenderFillRect(gRenderer, &tran);
-		tran.h +=10 * scale;
+		tran.h += (int)(10.0 * scale);
 	}
 	else if (tran.h > 0 && scrolled == true)
 	{
 		renstate = curstate;
 		SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 255);
 		SDL_RenderFillRect(gRenderer, &tran);
-		tran.h -= 10 * scale;
+		tran.h -= (int)(10.0 * scale);
 	}
 	else
 	{
@@ -355,14 +357,14 @@ void optionsLoop()
 	SDL_SetWindowPosition(gWindow, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 	SDL_SetWindowSize(gWindow, WW, WH);
 	tran.w = WW;
-	player.body.w = 75 * scale;
-	player.body.h = 150 * scale;
+	player.body.w = (int)(75 * scale);
+	player.body.h = (int)(150 * scale);
 	player.body.x = WW / 2 - player.body.w / 2;
 	player.body.y = (WH / 6) * 3;
-	for (int i = 0; i < sizeof(enemy) / sizeof(Enemy); i++)
+	for (long unsigned int i = 0; i < sizeof(enemy) / sizeof(Enemy); i++)
 	{
-		enemy[i].body.w = 150 * scale;
-		enemy[i].body.h = 150 * scale;
+		enemy[i].body.w = (int)(150 * scale);
+		enemy[i].body.h = (int)(150 * scale);
 	}
 }
 
@@ -389,7 +391,7 @@ void shopLoop(float dt)
 	{
 		sec += dt;
 	}
-	if (IsKeyDown(SDL_SCANCODE_SPACE) && money > item[shopitem].price + 1 && inputcool <= 0)
+	if (IsKeyDown(SDL_SCANCODE_SPACE) && (unsigned int)money > item[shopitem].price + 1 && inputcool <= 0)
 	{
 		inputcool = 0.2;
 		money -= item[shopitem].price;
@@ -413,7 +415,7 @@ void shopLoop(float dt)
 	{
 		inputcool = 0.2;
 		int discount = rand() % 20 + 1;
-		if (discount == 0 || item[shopitem].price <= discount)
+		if (discount == 0 || item[shopitem].price <= (unsigned int)discount)
 		{
 			return;
 		}
@@ -441,11 +443,11 @@ void shopLoop(float dt)
 		}
 	}
 	timeleft -= dt;
-	timeleftint = timeleft + 1;
+	timeleftint = (int)(timeleft + 1);
 	inputcool -= dt;
 	if (inputcool < 0)
 	{
-		inputcool == 0;
+		inputcool = 0;
 	}
 	if (timeleft <= 0)
 	{
@@ -522,7 +524,7 @@ void dungeonLoop(float dt)
 		Mix_GetError();
 		inputcool = 0.2;
 		item[0].ammount--;
-		for (int i = 0; i < sizeof(enemy) / sizeof(Enemy); i++)
+		for (long unsigned int i = 0; i < sizeof(enemy) / sizeof(Enemy); i++)
 		{
 			if (enemy[i].alive)
 			{
@@ -543,7 +545,7 @@ void dungeonLoop(float dt)
 		Mix_PlayChannel(-1, swd, 0);
 		inputcool = 0.2;
 		sword.cooldown = cd1;
-		for (int i = 0; i < sizeof(enemy) / sizeof(Enemy); i++)
+		for (long unsigned int i = 0; i < sizeof(enemy) / sizeof(Enemy); i++)
 		{
 			if (enemy[i].type == Goblin && enemy[i].alive)
 			{
@@ -558,7 +560,7 @@ void dungeonLoop(float dt)
 		Mix_PlayChannel(-1, bbg, 0);
 		inputcool = 0.2;
 		batbgone.cooldown = cd1;
-		for (int i = 0; i < sizeof(enemy) / sizeof(Enemy); i++)
+		for (long unsigned int i = 0; i < sizeof(enemy) / sizeof(Enemy); i++)
 		{
 			if (enemy[i].type == Bat && enemy[i].alive)
 			{
@@ -574,7 +576,7 @@ void dungeonLoop(float dt)
 		inputcool = 0.2;
 		SDL_Rect flailbox = { player.body.x - 400, 0, 400 + player.body.w + 400, WH };
 		flail.cooldown = cd2;
-		for (int i = 0; i < sizeof(enemy) / sizeof(Enemy); i++)
+		for (long unsigned int i = 0; i < sizeof(enemy) / sizeof(Enemy); i++)
 		{
 			if (SDL_HasIntersection(&flailbox, &enemy[i].body) && enemy[i].alive)
 			{
@@ -586,7 +588,7 @@ void dungeonLoop(float dt)
 	}
 	
 	timeleft -= dt;
-	timeleftint = timeleft + 1;
+	timeleftint = (int)(timeleft + 1);
 	inputcool -= dt;
 	if (timeleft <= 0)
 	{
@@ -594,7 +596,7 @@ void dungeonLoop(float dt)
 		red = 0;
 		curstate = Shop;
 		timeleft = 10;
-		for (int i = 0; i < sizeof(enemy) / sizeof(Enemy); i++)
+		for (long unsigned int i = 0; i < sizeof(enemy) / sizeof(Enemy); i++)
 		{
 			if (enemy[i].speed < 600 * scale)
 			{
@@ -648,6 +650,10 @@ void Update(float dt)
 		tutorialLoop();
 		break;
 	}
+	default:
+	{
+		ExitGame();
+	}
 	}
 	
 
@@ -657,7 +663,7 @@ void Update(float dt)
 
 void menuRen()
 {
-	SDL_Color text = { 255, 255, 255 };
+	SDL_Color text = { 255, 255, 255, 255 };
 	SDL_Rect bg = { 0, 0, WW, WH };
 	SDL_Rect Start = { 64, 128, 150, 75 };
 	SDL_Rect Options = { Start.x, Start.y + 64, 150, 75 };
@@ -688,7 +694,7 @@ void menuRen()
 
 void optionsRen()
 {
-	SDL_Color text = { 255, 255, 255 };
+	SDL_Color text = { 255, 255, 255, 255 };
 	SDL_Rect bg = { 0, 0, WW, WH };
 	SDL_Rect halfbg = { 64, 64, WW / 2 - halfbg.x, WH / 4 * 3 - halfbg.y };
 	SDL_Rect resmenu = { 100, 100, 300, 300 };
@@ -739,10 +745,9 @@ void optionsRen()
 
 void shopRen(SDL_Rect bb, SDL_Rect tb)
 {
-	SDL_Color text = { 0, 0, 0 };
-	SDL_Color wtext = { 255, 255, 255 };
+	SDL_Color text = { 0, 0, 0, 255 };
 	SDL_Rect bg = { 0, 0, WW, WH };
-	SDL_Rect player = { WW / 2 - (75 * scale) / 2, (WH / 6) * 3, 75 * scale, 150 * scale };
+	SDL_Rect plr = { WW / 2 - (int)(75.0 * scale) / 2, (WH / 6) * 3, (int)(75.0 * scale), (int)(150.0 * scale) };
 	SDL_Rect Shopmenu = { WW / 2 - 256, WH / 2 - 128, 512, 256 };
 	SDL_Rect ItemPedestal = { Shopmenu.x + Shopmenu.w / 2 - 50, Shopmenu.y + 16, 100, 100 };
 	SDL_Rect Shopbuyico = { ItemPedestal.x - 150, ItemPedestal.y + 32, 64, 32 };
@@ -783,7 +788,7 @@ void shopRen(SDL_Rect bb, SDL_Rect tb)
 	pricetext = SDL_CreateTextureFromSurface(gRenderer, price);
 	
 	SDL_SetRenderDrawColor(gRenderer, 255, 0, 0, 255);
-	SDL_RenderCopy(gRenderer, pback , NULL, &player);
+	SDL_RenderCopy(gRenderer, pback , NULL, &plr);
 	SDL_SetRenderDrawColor(gRenderer, 255, 255, 255, 100);
 	SDL_RenderFillRect(gRenderer, &Shopmenu);
 	SDL_RenderCopy(gRenderer, Shopbuyi, NULL, &Shopbuyico);
@@ -800,7 +805,7 @@ void shopRen(SDL_Rect bb, SDL_Rect tb)
 	SDL_RenderCopy(gRenderer, pmoneytxt, NULL, &PMoney);
 	SDL_RenderCopy(gRenderer, pricetext, NULL, &Price);
 
-	SDL_SetRenderDrawColor(gRenderer, 255, 0, 0, red / 30);
+	SDL_SetRenderDrawColor(gRenderer, 255, 0, 0, (uint8_t)(red / 30));
 	SDL_RenderFillRect(gRenderer, &tg);
 
 	SDL_DestroyTexture(headertxt);
@@ -840,12 +845,12 @@ void enemyRen(float dt)
 void dungeonRen(float interpolation, SDL_Rect bb, SDL_Rect tb)
 {
 	SDL_Rect bg = { 0, 0, WW, WH };
-	SDL_Rect player = { WW / 2 - (75 * scale) / 2, (WH / 6) * 3, 75 * scale, 150 * scale };
+	SDL_Rect plr = { WW / 2 - (int)(75 * scale) / 2, (WH / 6) * 3, (int)(75.0 * scale), (int)(150 * scale) };
 	SDL_RenderCopy(gRenderer, Dungeonbg, NULL, &bg);
 	SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 255);
 	
 	
-	SDL_RenderCopy(gRenderer, pback, NULL, &player);
+	SDL_RenderCopy(gRenderer, pback, NULL, &plr);
 	enemyRen(interpolation);
 	SDL_RenderFillRect(gRenderer, &bb);
 	SDL_RenderFillRect(gRenderer, &tb);
@@ -853,8 +858,7 @@ void dungeonRen(float interpolation, SDL_Rect bb, SDL_Rect tb)
 
 void uiRen(SDL_Rect bb, SDL_Rect tb)
 {
-	SDL_Color text = { 0, 0, 0 };
-	SDL_Color wtext = { 255, 255, 255 };
+	SDL_Color wtext = { 255, 255, 255, 255 };
 	SDL_Rect Item0ic = { bb.x, bb.y, 60, 60 };
 	SDL_Rect Item0amm = { Item0ic.x + 10, Item0ic.y + 55, 40, 60 };
 	SDL_Rect Swdic = { bb.w - 100, bb.y, 60, 60 };
@@ -951,7 +955,7 @@ void uiRen(SDL_Rect bb, SDL_Rect tb)
 
 void gameOverRen()
 {
-	SDL_Color text = { 0, 0, 0 };
+	SDL_Color text = { 0, 0, 0, 255 };
 	SDL_Rect bg = { 0, 0, WW, WH };
 	SDL_Rect GOtext = { WW / 2 - 100, WH / 2 - 50, 200, 100 };
 	SDL_Rect Scoretext = { GOtext.x - 25, GOtext.y + 100, 200, 100 };
@@ -962,7 +966,7 @@ void gameOverRen()
 	
 	SDL_Surface* GObtn = TTF_RenderText_Solid(SegoeHeader, "Game Over", text);
 	SDL_Surface* scoretext = TTF_RenderText_Solid(Segoep, "Your kills: ", text);
-	SDL_Surface* score = TTF_RenderText_Solid(Segoep, scoretxt.str().c_str(), text);
+	SDL_Surface* scoreint = TTF_RenderText_Solid(Segoep, scoretxt.str().c_str(), text);
 	SDL_Surface* textsrf = TTF_RenderText_Solid(Segoep, "Press Escape to quit the game", text);
 
 
@@ -971,7 +975,7 @@ void gameOverRen()
 
 	SDL_Texture* gotxt = SDL_CreateTextureFromSurface(gRenderer, GObtn);
 	SDL_Texture* scrtxt = SDL_CreateTextureFromSurface(gRenderer, scoretext);
-	SDL_Texture* scr = SDL_CreateTextureFromSurface(gRenderer, score);
+	SDL_Texture* scr = SDL_CreateTextureFromSurface(gRenderer, scoreint);
 	SDL_Texture* texttxt = SDL_CreateTextureFromSurface(gRenderer, textsrf);
 
 	SDL_RenderCopy(gRenderer, gotxt, NULL, &GOtext);
@@ -981,7 +985,7 @@ void gameOverRen()
 
 	SDL_FreeSurface(GObtn);
 	SDL_FreeSurface(scoretext);
-	SDL_FreeSurface(score);
+	SDL_FreeSurface(scoreint);
 	SDL_FreeSurface(textsrf);
 
 	SDL_DestroyTexture(gotxt);
@@ -1019,16 +1023,16 @@ void RenderFrame(float interpolation)
 	}
 	case Dungeon:
 	{
-		SDL_Rect bb = { 0, (WH - 200), WW, 200 * scale };
-		SDL_Rect tb = { 0, 0, WW, 100 * scale };
+		SDL_Rect bb = { 0, (WH - 200), WW, (int)(200.0 * scale) };
+		SDL_Rect tb = { 0, 0, WW, (int)(100.0 * scale) };
 		dungeonRen(interpolation, bb, tb);
 		uiRen(bb, tb);
 		break;
 	}
 	case Shop:
 	{
-		SDL_Rect bb = { 0, (WH - 200), WW, 200 * scale };
-		SDL_Rect tb = { 0, 0, WW, 100 * scale };
+		SDL_Rect bb = { 0, (WH - 200), WW, (int)(200.0 * scale) };
+		SDL_Rect tb = { 0, 0, WW, (int)(100.0 * scale) };
 		shopRen(bb ,tb);
 		uiRen(bb, tb);
 		break;
