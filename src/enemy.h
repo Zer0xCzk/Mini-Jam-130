@@ -5,12 +5,12 @@
 #include <stdbool.h>
 
 enum dir { Left, Right };
-enum type { Bat, Goblin };
+enum t { Bat, Goblin };
 
 struct Enemy {
 	SDL_Rect body;
 	SDL_Texture* texture;
-	type type;
+	t type;
 	dir direction;
 	bool alive;
 	double speed;
