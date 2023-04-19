@@ -188,6 +188,7 @@ int main(int argc, char* argv[])
 	}
 
 	Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 4096);
+	Mix_Volume(-1, 32);
 
 	itemLoad();
 	textureLoad();
@@ -635,8 +636,8 @@ void dungeonLoop(float dt)
 		red = 0;
 		curstate = Shop;
 		timeleft = 10;
-		enspeed += 20 * scale;
-		spawnrate += spawnrate + 0.25;
+		enspeed += 10 * scale;
+		spawnrate += spawnrate + 0.1;
 		for (long unsigned int i = 0; i < sizeof(enemy) / sizeof(Enemy); i++)
 		{
 			if (enemy[i].alive)
