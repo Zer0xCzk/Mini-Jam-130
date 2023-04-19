@@ -51,6 +51,11 @@ SDL_Texture* Menubg;
 SDL_Texture* Dungeonbg;
 SDL_Texture* tuttxt;
 SDL_Texture* pback;
+SDL_Texture* qbtn;
+SDL_Texture* wbtn;
+SDL_Texture* ebtn;
+SDL_Texture* rbtn;
+SDL_Texture* tbtn;
 Item item[2];
 Weapon sword = { NULL, cd1 };
 Weapon batbgone = { NULL, cd1 };
@@ -63,12 +68,14 @@ bool scrolled = false;
 float timeleft = 10;
 int timeleftint = 10;
 int money = 100;
-float  lastspawn = 40;
+double  lastspawn = 40;
+double spawnrate = 1;
 int shopitem;
 int red = 0;
 int score = 0;
 float sec = 0;
 double inputcool = 0.3;
+double enspeed = 200;
 std::stringstream moneytxt, pricetxt, item0txt, swdtxt, bbgtxt, timetxt, item1txt, flltxt, hammtxt, scoretxt;
 //=============================================================================
 void itemLoad()
@@ -109,6 +116,11 @@ void textureLoad()
 	Dungeonbg = LoadSprite("assets/enemys/bg.png");
 	tuttxt = LoadSprite("assets/menus/ttext.png");
 	pback = LoadSprite("assets/menus/pback.png");
+	qbtn = LoadSprite("assets/menus/qbtn.png");
+	wbtn = LoadSprite("assets/menus/wbtn.png");
+	ebtn = LoadSprite("assets/menus/ebtn.png");
+	rbtn = LoadSprite("assets/menus/rbtn.png");
+	tbtn = LoadSprite("assets/menus/tbtn.png");
 }
 void textureDestroy()
 {
@@ -148,6 +160,16 @@ void textureDestroy()
 		SDL_DestroyTexture(Dungeonbg);
 	if (tuttxt)
 		SDL_DestroyTexture(tuttxt);
+	if (qbtn)
+		SDL_DestroyTexture(qbtn);
+	if (wbtn)
+		SDL_DestroyTexture(wbtn);
+	if (ebtn)
+		SDL_DestroyTexture(ebtn);
+	if (rbtn)
+		SDL_DestroyTexture(rbtn);
+	if (tbtn)
+		SDL_DestroyTexture(tbtn);
 }
 
 
@@ -270,12 +292,12 @@ void enemySpawn()
 				}
 				}
 			}
-			enemy[i].speed = 200 * scale;
+			enemy[i].speed = enspeed;
 			lastspawn = 0;
 			break;
 		}
 	}
-	lastspawn++;
+	lastspawn += spawnrate;
 }
 
 
@@ -411,7 +433,7 @@ void shopLoop(float dt)
 		}
 		shopitem = rand() % 2;
 	}
-	if (IsKeyDown(SDL_SCANCODE_LALT) && item[shopitem].price > 0 && inputcool <= 0)
+	if (IsKeyDown(SDL_SCANCODE_LALT) && inputcool <= 0)
 	{
 		inputcool = 0.2;
 		int discount = rand() % 20 + 1;
@@ -441,7 +463,7 @@ void shopLoop(float dt)
 			item[shopitem].price -= discount;
 		}
 	}
-	if (IsKeyDown(SDL_SCANCODE_LSHIFT) && inputcool <= 0)
+	if (IsKeyPressed(SDL_SCANCODE_LSHIFT) && inputcool <= 0)
 	{ 
 		inputcool = 0.2;
 		shopitem = rand() % 2;
@@ -459,13 +481,12 @@ void shopLoop(float dt)
 		}
 		}
 	}
+	if (inputcool > 0)
+	{
+		inputcool -= dt;
+	}
 	timeleft -= dt;
 	timeleftint = (int)(timeleft + 1);
-	inputcool -= dt;
-	if (inputcool < 0)
-	{
-		inputcool = 0;
-	}
 	if (timeleft <= 0)
 	{
 		Mix_PlayChannel(-1, fgt, 0);
@@ -473,6 +494,7 @@ void shopLoop(float dt)
 		timeleft = 10;
 	}
 }
+
 void dungeonLoop(float dt)
 {
 	if (player.hp <= 0)
@@ -613,12 +635,10 @@ void dungeonLoop(float dt)
 		red = 0;
 		curstate = Shop;
 		timeleft = 10;
+		enspeed += 20 * scale;
+		spawnrate += spawnrate + 0.25;
 		for (long unsigned int i = 0; i < sizeof(enemy) / sizeof(Enemy); i++)
 		{
-			if (enemy[i].speed < 600 * scale)
-			{
-				enemy[i].speed += 10 * scale;
-			}
 			if (enemy[i].alive)
 			{
 				enemy[i].alive = false;
@@ -827,7 +847,7 @@ void shopRen(SDL_Rect bb, SDL_Rect tb)
 	SDL_RenderCopy(gRenderer, pmoneytxt, NULL, &PMoney);
 	SDL_RenderCopy(gRenderer, pricetext, NULL, &Price);
 
-	SDL_SetRenderDrawColor(gRenderer, 255, 0, 0, (uint8_t)(red / 30));
+	SDL_SetRenderDrawColor(gRenderer, 255, 0, 0, (uint8_t)(red / 25));
 	SDL_RenderFillRect(gRenderer, &tg);
 
 	SDL_DestroyTexture(headertxt);
@@ -890,10 +910,15 @@ void uiRen(SDL_Rect bb, SDL_Rect tb)
 	SDL_Rect Bbgcld = { Bbgic.x + 10, Bbgic.y + 55, 40, 60 };
 	SDL_Rect Fllic = { Bbgic.x + 100, bb.y, 60, 60 };
 	SDL_Rect Fllcld = { Fllic.x + 10, Fllic.y + 55, 40, 60 };
-	SDL_Rect Item0ic = { Hpic.x - 200, bb.y, 60, 60 };
+	SDL_Rect Item0ic = { Hpic.x - 180, bb.y, 60, 60 };
 	SDL_Rect Item0amm = { Item0ic.x + 10, Item0ic.y + 55, 40, 60 };
 	SDL_Rect Item1ic = { Item0ic.x + 100, Item0ic.y, 60, 60 };
 	SDL_Rect Item1amm = { Item1ic.x + 10, Item1ic.y + 55, 40, 60 };
+	SDL_Rect QButton = { Item0ic.x + 5, Item0amm.y + 60, 50, 50 };
+	SDL_Rect WButton = { Item1ic.x + 5, Item1amm.y + 60, 50, 50 };
+	SDL_Rect EButton = { Swdic.x + 5, Swdcld.y + 60, 50, 50 };
+	SDL_Rect RButton = { Bbgic.x + 5, Bbgcld.y + 60, 50, 50 };
+	SDL_Rect TButton = { Fllic.x + 5, Fllcld.y + 60, 50, 50 };
 
 	SDL_Surface* item0;
 	SDL_Surface* swdcld;
@@ -946,6 +971,11 @@ void uiRen(SDL_Rect bb, SDL_Rect tb)
 	SDL_RenderCopy(gRenderer, flltext, NULL, &Fllcld);
 	SDL_RenderCopy(gRenderer, Heart, NULL, &Hpic);
 	SDL_RenderCopy(gRenderer, hammtext, NULL, &Hamm);
+	SDL_RenderCopy(gRenderer, qbtn, NULL, &QButton);
+	SDL_RenderCopy(gRenderer, wbtn, NULL, &WButton);
+	SDL_RenderCopy(gRenderer, ebtn, NULL, &EButton);
+	SDL_RenderCopy(gRenderer, rbtn, NULL, &RButton);
+	SDL_RenderCopy(gRenderer, tbtn, NULL, &TButton);
 
 
 
