@@ -15,9 +15,9 @@
 #include <time.h>
 #include <sstream>
 
-int WW = 1920;
-int WH = 1080;
-double scale = 1.5;
+int WW = 1280;
+int WH = 720;
+double scale = 1;
 #define price1 (Uint32)rand() % 20 + 80
 #define price2 (Uint32)rand() % 20 + 30
 #define cd1 4
@@ -227,20 +227,20 @@ void enemySpawn()
 				{
 				case(Left):
 				{
-					enemy[i].body.w = (int)(150 * scale);
-					enemy[i].body.h = (int)(150 * scale);
+					enemy[i].body.w = (int)(100 * scale);
+					enemy[i].body.h = (int)(50 * scale);
 					enemy[i].alive = true;
 					enemy[i].body.x = WW - enemy[i].body.w;
-					enemy[i].body.y = 0 + (WH / 4);
+					enemy[i].body.y = 0 + WH / 3;
 					break;
 				}
 				case(Right):
 				{
-					enemy[i].body.w = (int)(150 * scale);
-					enemy[i].body.h = (int)(150 * scale);
+					enemy[i].body.w = (int)(100 * scale);
+					enemy[i].body.h = (int)(50 * scale);
 					enemy[i].alive = true;
 					enemy[i].body.x = 0;
-					enemy[i].body.y = 0 + WH / 4;
+					enemy[i].body.y = 0 + WH / 3;
 					break;
 				}
 				}
@@ -415,6 +415,23 @@ void shopLoop(float dt)
 	{
 		inputcool = 0.2;
 		int discount = rand() % 20 + 1;
+		switch (shopitem)
+		{
+		case(0):
+		{
+			if (item[shopitem].price - discount < 50)
+			{
+				return;
+			}
+		}
+		case(1):
+		{
+			if (item[shopitem].price - discount < 30)
+			{
+				return;
+			}
+		}
+		}
 		if (discount == 0 || item[shopitem].price <= (unsigned int)discount)
 		{
 			return;
@@ -692,6 +709,11 @@ void menuRen()
 	SDL_DestroyTexture(nametext);
 }
 
+void varChange(std::stringstream x, SDL_Texture* textName, SDL_Surface)
+{
+
+}
+
 void optionsRen()
 {
 	SDL_Color text = { 255, 255, 255, 255 };
@@ -859,19 +881,19 @@ void dungeonRen(float interpolation, SDL_Rect bb, SDL_Rect tb)
 void uiRen(SDL_Rect bb, SDL_Rect tb)
 {
 	SDL_Color wtext = { 255, 255, 255, 255 };
-	SDL_Rect Item0ic = { bb.x, bb.y, 60, 60 };
-	SDL_Rect Item0amm = { Item0ic.x + 10, Item0ic.y + 55, 40, 60 };
-	SDL_Rect Swdic = { bb.w - 100, bb.y, 60, 60 };
+	SDL_Rect Timeleft = { tb.w / 2 - 30, tb.y + 16, 60, 100 };
+	SDL_Rect Hpic = { (bb.w / 2) - 50, bb.y, 100, 100 };
+	SDL_Rect Hamm = { Hpic.x + Hpic.w / 2 - 20, Hpic.y + Hpic.h - 8, 40, 60 };
+	SDL_Rect Swdic = { Hpic.x + Hpic.w + 16, bb.y, 60, 60 };
 	SDL_Rect Swdcld = { Swdic.x + 10, Swdic.y + 55, 40, 60 };
-	SDL_Rect Bbgic = { Swdic.x - 100, bb.y, 60, 60 };
+	SDL_Rect Bbgic = { Swdic.x + 100, bb.y, 60, 60 };
 	SDL_Rect Bbgcld = { Bbgic.x + 10, Bbgic.y + 55, 40, 60 };
-	SDL_Rect Timeleft = { bb.w / 2 - 30, bb.y + 16, 60, 100 };
+	SDL_Rect Fllic = { Bbgic.x + 100, bb.y, 60, 60 };
+	SDL_Rect Fllcld = { Fllic.x + 10, Fllic.y + 55, 40, 60 };
+	SDL_Rect Item0ic = { Hpic.x - 200, bb.y, 60, 60 };
+	SDL_Rect Item0amm = { Item0ic.x + 10, Item0ic.y + 55, 40, 60 };
 	SDL_Rect Item1ic = { Item0ic.x + 100, Item0ic.y, 60, 60 };
 	SDL_Rect Item1amm = { Item1ic.x + 10, Item1ic.y + 55, 40, 60 };
-	SDL_Rect Fllic = { Bbgic.x - 100, bb.y, 60, 60 };
-	SDL_Rect Fllcld = { Fllic.x + 10, Fllic.y + 55, 40, 60 };
-	SDL_Rect Hpic = { (tb.w / 2) - 50, tb.y, 100, 100 };
-	SDL_Rect Hamm = { Hpic.x + Hpic.w / 2 - 20, Hpic.y + Hpic.h - 8, 40, 60 };
 
 	SDL_Surface* item0;
 	SDL_Surface* swdcld;
