@@ -446,6 +446,7 @@ void shopLoop(float dt)
 			{
 				return;
 			}
+			break;
 		}
 		case(1):
 		{
@@ -453,6 +454,7 @@ void shopLoop(float dt)
 			{
 				return;
 			}
+			break;
 		}
 		}
 		if (discount == 0 || item[shopitem].price <= (unsigned int)discount)
